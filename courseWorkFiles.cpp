@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 using namespace std;
 
@@ -15,11 +16,11 @@ const char enterGradesMessage[] = "Enter grades, each on a new line \n";
 // Struct representing a student
 struct Student
 {
-    char FirstName[50];
-    char LastName[50];
+    char Name[50];
     char Egn[11];
     char Fnumber[7];
     int Grades[10];
+    float Avg;
 };
 
 // Used to write separate lines to the output file so it is more readable.
@@ -28,98 +29,107 @@ void AddSeparatorLine(FILE *file, char type[20], char text[20]) {
 }
 
 // Used for entering information about the students
-void EnterStudents(Student arr[],int numberOfStudents){
+void EnterStudents(char filename[20],int numberOfStudents){
+    FILE *file;
+    file = fopen(filename, "w+");
     for (int i = 0; i < numberOfStudents; i++)
     {
+        Student student;
+        
+
         printf("Students first name: ");
-        scanf("%s", &arr[i].FirstName);
-        printf("Students last name: ");
-        scanf("%s", &arr[i].LastName);
+        scanf("%s", &student.Name);
         printf("Students Egn: ");
-        scanf("%s", &arr[i].Egn);
+        scanf("%s", &student.Egn);
         printf("Students Fnumber: ");
-        scanf("%s", &arr[i].Fnumber);
+        scanf("%s", &student.Fnumber);
 
         printf(enterGradesMessage);
         for (int f = 0; f <= 9; f++)
         {  
             printf("Grade number %d: ", f+1);
-            scanf("%d", &arr[i].Grades[f]);
-            while(arr[i].Grades[f] < 2 || arr[i].Grades[f] > 6){
+            scanf("%d", &student.Grades[f]);
+            while(student.Grades[f] < 2 || student.Grades[f] > 6){
                 printf(incorrectGradeValueMessage);
-                scanf("%d", &arr[i].Grades[f]);
+                scanf("%d", &student.Grades[f]);
             }            
         }
-    }
-}
 
-// Writes the students to the given file if it exists.
-// If it does not exist, it gets created.
-void WriteStudentsToFile(char fileName[30], Student arr[], int arraySize) {
-    FILE *file;
-
-    file = fopen(fileName, "w+");
-    AddSeparatorLine(file, "Start", "students");
-    for (int i = 0; i < arraySize; i++)
-    {
-        fprintf(file, "Fnumber %s, Name: %s %s, Egn: %s ",
-            arr[i].Fnumber, arr[i].FirstName, arr[i].LastName, arr[i].Egn);
-        
-        fprintf(file, "grades: { ");
+        fprintf(file, "Fnumber: %s, Name: %s, EGN: %s, Grades: { ", student.Fnumber, student.Name, student.Egn);
         for (int f = 0; f <= 9; f++)
         {
-            fprintf(file, "%d, ", arr[i].Grades[f]);
+            fprintf(file, "%d ", student.Grades[f]);
         }
-        fprintf(file, "} \n");
+        fprintf(file, "}\n");
     }
-    AddSeparatorLine(file, "End", "students");
     fclose(file);
 }
 
 // Appends the calculated average grades for the students.
-void AppendAvgGradesForStudents(char fileName[30], Student arr[], int arraySize) {
+void AppendAvgGradesForStudents(char fileName[30], int elementsCount) {
     FILE *file;
 
-    file = fopen(fileName, "a");
-    AddSeparatorLine(file, "Start", "avg grades");
-    for (int i = 0; i < arraySize; i++)
-    {
-        fprintf(file, "Fnomer: %s", arr[i].Fnumber);
-        float avg = 0;
-        for (int f = 0; f <= 9; f++)
+    file = fopen(fileName, "a+");
+
+    char singleLine[100]="";
+    int fileIterations = 0;
+    int studentsCount = 0;
+    while (!feof(file) || fileIterations <= elementsCount) {
+        fgets(singleLine,100,file);
+        studentsCount++;
+        float avg = 0.0;
+        for (int i = 0; i < 100; i++)
         {
-            avg+=arr[i].Grades[f];
+           if (isdigit(singleLine[i])){
+                avg+=atof(&singleLine[i]);
+            }
         }
+        
         avg/=10;
-        fprintf(file, " Avg: %.2f \n", avg);
+        fprintf(file, "Student: %d, Avg: %.2f\n", studentsCount, avg);
+        fileIterations++;
     }
-    AddSeparatorLine(file, "End", "avg grades");
+
     fclose(file);
 }
 
 // Appends the calculated average grades for the students that have passed their third exam.
-void AppendAvgGradesForStudentsPassedTheyThirdExam(char fileName[30], Student arr[], int arraySize) {
+void AppendAvgGradesForStudentsPassedTheyThirdExam(char fileName[30], int elementsCount) {
     FILE *file;
 
-    file = fopen(fileName, "a");
-    AddSeparatorLine(file, "Start", "avg grade on the first class.");
-    fprintf(file, "Calculated if there are students that passed their 3rd exam.\n");
-    float avg;
-    int count = 0;
-    for (int i = 0; i < arraySize; i++)
-    {
-        if (arr[i].Grades[2] >= 3) {
-            avg += arr[i].Grades[0];
-            count++;
+    file = fopen(fileName, "a+");
+    char singleLine[100]="";
+
+    float avg = 0.0;
+    int studentsCount = 0;
+    int fileIterations = 0;
+    while (!feof(file) || fileIterations<=elementsCount) {
+        fgets(singleLine,100,file);
+        int digitCount = 0;
+        float first = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            if (isdigit(singleLine[i])){
+                digitCount++;
+                if(digitCount == 1) {
+                    first = atof(&singleLine[i]);
+                }
+                float digit = atof(&singleLine[i]);
+                if (digitCount == 3 && digit >=3) {
+                    avg += first;
+                    studentsCount++;
+                    break;
+                }
+                if(digitCount == 3) {
+                    break;
+                }
+            }
         }
+        fileIterations++;
     }
-    if (count > 0) {
-        avg /= count;
-        fprintf(file, "Avg grade of the first class is - %.2f\n", avg);
-        AddSeparatorLine(file, "End", "avg grades of first class");
-    } else {
-        fprintf(file, "Noone has passed their third exam.\n");
-    }
+    avg/=studentsCount;
+    fprintf(file, "Average on the first class is: %.2f\n", avg);
+
     fclose(file);
 }
 
@@ -155,12 +165,9 @@ void Execute() {
     int n;
     printf("How many students: ");
     scanf("%d", &n);
-    struct Student students[n];
-    int arraySize = sizeof(students)/ sizeof(students[0]);
-    EnterStudents(students, n);
-    WriteStudentsToFile(filename, students, arraySize);
-    AppendAvgGradesForStudents(filename, students, arraySize);
-    AppendAvgGradesForStudentsPassedTheyThirdExam(filename, students, arraySize);
+    EnterStudents(filename, n);
+    AppendAvgGradesForStudents(filename, n);
+    AppendAvgGradesForStudentsPassedTheyThirdExam(filename, n);
 }
 
 // The entry point of the program.
