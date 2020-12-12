@@ -1,185 +1,144 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
 
 using namespace std;
 
-// Section used for output messages.
-const char openingMessage[] = "Enter a file to put results in (It will be overwriten if exists.): ";
-const char closingMessage[] = "Your file should be ready if everything went okey. Do you want to create a new one? (Y to continue ot any key to close the program.)";
-const char fileNotFoundMessage[] = "There is no file named like that. Do you want to create it? y/n ";
-const char enterFileNameMessage[] = "Enter a file to put results in: ";
-const char incorrectGradeValueMessage[] = "Incorrect grade (between 2 and 6 only). Enter a new one: ";
-const char enterGradesMessage[] = "Enter grades, each on a new line \n";
-
-// Struct representing a student
 struct Student
 {
-    char Name[50];
-    char Egn[11];
-    char Fnumber[7];
-    int Grades[10];
-    float Avg;
+    char name[20];
+    char egn[11];
+    char fnumber[7];
+    int grades[10];
+    float avg;
 };
 
-// Used to write separate lines to the output file so it is more readable.
-void AddSeparatorLine(FILE *file, char type[20], char text[20]) {
-    fprintf(file, "------------------ %s of %s list ------------------\n", type, text);
+Student student;
+FILE *binaryFile;
+char filename[30];
+
+
+void createFile() {
+    binaryFile = fopen(filename, "w");
+    fclose(binaryFile);
 }
 
-// Used for entering information about the students
-void EnterStudents(char filename[20],int numberOfStudents){
-    FILE *file;
-    file = fopen(filename, "w+");
-    for (int i = 0; i < numberOfStudents; i++)
+void readStudent(Student *s){
+    printf("Student's name: "); scanf("%s", &s->name);
+    printf("Student's egn: "); scanf("%s", &s->egn);
+    printf("Student's fnumber: "); scanf("%s", &s->fnumber);
+
+    printf("Enter grades, each on a new line\n");
+
+    for (int f = 0; f <= 9; f++)
     {
-        Student student;
-        
-
-        printf("Students first name: ");
-        scanf("%s", &student.Name);
-        printf("Students Egn: ");
-        scanf("%s", &student.Egn);
-        printf("Students Fnumber: ");
-        scanf("%s", &student.Fnumber);
-
-        printf(enterGradesMessage);
-        for (int f = 0; f <= 9; f++)
-        {  
+        printf("Grade number %d: ", f+1);
+        scanf("%d", &s->grades[f]);
+        while(s->grades[f] < 2 || s->grades[f] > 6){
+            printf("Incorrect grade.\n");
             printf("Grade number %d: ", f+1);
-            scanf("%d", &student.Grades[f]);
-            while(student.Grades[f] < 2 || student.Grades[f] > 6){
-                printf(incorrectGradeValueMessage);
-                scanf("%d", &student.Grades[f]);
-            }            
-        }
-
-        fprintf(file, "Fnumber: %s, Name: %s, EGN: %s, Grades: { ", student.Fnumber, student.Name, student.Egn);
-        for (int f = 0; f <= 9; f++)
-        {
-            fprintf(file, "%d ", student.Grades[f]);
-        }
-        fprintf(file, "}\n");
+            scanf("%d", &s->grades[f]);
+        }       
     }
-    fclose(file);
 }
 
-// Appends the calculated average grades for the students.
-void AppendAvgGradesForStudents(char fileName[30], int elementsCount) {
-    FILE *file;
-
-    file = fopen(fileName, "a+");
-
-    char singleLine[100]="";
-    int fileIterations = 0;
-    int studentsCount = 0;
-    while (!feof(file) || fileIterations <= elementsCount) {
-        fgets(singleLine,100,file);
-        studentsCount++;
-        float avg = 0.0;
-        for (int i = 0; i < 100; i++)
-        {
-           if (isdigit(singleLine[i])){
-                avg+=atof(&singleLine[i]);
-            }
-        }
-        
-        avg/=10;
-        fprintf(file, "Student: %d, Avg: %.2f\n", studentsCount, avg);
-        fileIterations++;
-    }
-
-    fclose(file);
-}
-
-// Appends the calculated average grades for the students that have passed their third exam.
-void AppendAvgGradesForStudentsPassedTheyThirdExam(char fileName[30], int elementsCount) {
-    FILE *file;
-
-    file = fopen(fileName, "a+");
-    char singleLine[100]="";
-
-    float avg = 0.0;
-    int studentsCount = 0;
-    int fileIterations = 0;
-    while (!feof(file) || fileIterations<=elementsCount) {
-        fgets(singleLine,100,file);
-        int digitCount = 0;
-        float first = 0;
-        for (int i = 0; i < 100; i++)
-        {
-            if (isdigit(singleLine[i])){
-                digitCount++;
-                if(digitCount == 1) {
-                    first = atof(&singleLine[i]);
-                }
-                float digit = atof(&singleLine[i]);
-                if (digitCount == 3 && digit >=3) {
-                    avg += first;
-                    studentsCount++;
-                    break;
-                }
-                if(digitCount == 3) {
-                    break;
-                }
-            }
-        }
-        fileIterations++;
-    }
-    avg/=studentsCount;
-    fprintf(file, "Average on the first class is: %.2f\n", avg);
-
-    fclose(file);
-}
-
-// Checks if the file with the given name exists.
-bool CheckIfFileExists(char filename[100]) {
-    FILE *file;
-    
-    if(fopen(filename, "r") == NULL){
-        return false;
-    }
-    return true;
-}
-
-void Execute() {
-    char fn[20];
-    char filename[100] = { '.','/' };
-    printf(openingMessage);
-    scanf("%s", &fn);
-    strcat(filename, fn); 
-    while (!CheckIfFileExists(filename)) {
-        printf(fileNotFoundMessage);
-        char c;
-        scanf("%s", &c);
-        if(c == 'y'){
-            break;
-        } else {
-            printf(enterFileNameMessage);
-            scanf("%s", &fn);
-        }
-    }
-
-
-    int n;
-    printf("How many students: ");
-    scanf("%d", &n);
-    EnterStudents(filename, n);
-    AppendAvgGradesForStudents(filename, n);
-    AppendAvgGradesForStudentsPassedTheyThirdExam(filename, n);
-}
-
-// The entry point of the program.
-int main() {
-    // Starts up the program.
-    Execute();
+void writeStudentsToBinary() {
     char c;
-    printf(closingMessage);
-    scanf("%s", &c);
-    if (c == 'y' || c == 'Y') {
-        Execute();
+    binaryFile = fopen(filename, "ab");
+    do {
+        readStudent(&student);
+        fwrite(&student, sizeof(student),1,binaryFile);
+        printf("Do you want to add another student? (y to continue, else for no): ");
+        scanf("%s", &c);
+    } while(c == 'y');
+    fclose(binaryFile);
+}
+
+void calculateAvg() {
+    binaryFile = fopen(filename, "r+b");
+
+    fread(&student, sizeof(student),1,binaryFile);
+    while (!feof(binaryFile)) {
+        float sum = 0.0;
+
+        for (int i = 0; i <=9; i++)
+        {
+            sum+=student.grades[i];
+        }
+        student.avg = sum / 10;
+
+        fseek(binaryFile, -(long)sizeof(student), SEEK_CUR);
+        fwrite(&student, sizeof(student), 1, binaryFile);
+
+        fread(&student, sizeof(student),1,binaryFile);
+    }
+
+    fclose(binaryFile);
+}
+
+void calculateAvgFristSubject() { 
+    float sum = 0.0;
+    int counter = 0;
+    binaryFile = fopen(filename, "rb");
+
+    fread(&student, sizeof(student),1,binaryFile);
+    while (!feof(binaryFile)) {
+        if (student.grades[2] >= 3){
+            sum+=student.grades[0];
+            counter++;
+        }
+        fread(&student, sizeof(student),1,binaryFile);
+    }
+    fclose(binaryFile);
+
+    if (counter >= 1) {
+        printf("Avg for the first subject is: %.2f\n", sum/counter);
     } else {
-        return 0;
-    } 
+        printf("No one has passed their 3rd exam.\n");
+    }
+}
+
+void createTxtFile() {
+    binaryFile = fopen(filename, "rb");
+    FILE *txt;
+    strcat(filename,".txt");
+    txt = fopen(filename, "w");
+
+    fread(&student, sizeof(student),1,binaryFile);
+    while (!feof(binaryFile)) {
+        fprintf(txt, "Name: %s, Egn: %s, Fnumer: %s, Grades: ", student.name, student.egn, student.fnumber);
+
+        for (int i = 0; i <=9; i++)
+        {
+            fprintf(txt,"%d ", student.grades[i]);
+        }
+
+        fprintf(txt, ", Avg: %.2f\n", student.avg);
+        fread(&student, sizeof(student),1,binaryFile);
+    }
+
+    fclose(binaryFile);
+    fclose(txt);
+}
+
+int main() {
+
+    int c;
+    printf("Enter the name of the file: ");scanf("%s", &filename);
+    do {
+        printf("MENU:\n");
+        printf("1. Create new file\n");
+        printf("2. Add students\n");
+        printf("3. Calculate avg\n");
+        printf("4. Calculate avg on first subject\n");
+        printf("5. Write students to txt file.\n");
+        printf("Select an option or 0 to close the program: ");
+        scanf("%d",&c);getchar();
+    switch (c){
+        case 1:createFile();break;
+        case 2:writeStudentsToBinary();break;
+        case 3:calculateAvg();break;
+        case 4:calculateAvgFristSubject();break;
+        case 5:createTxtFile();
+    }
+    }while (c!=0);
 }
